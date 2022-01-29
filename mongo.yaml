@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment
+  labels:
+    app: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels: # Pods with these labels are part of this deployment
+      app: mongo
+  template: # configuration for Pod within Deployment
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:5.0
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret # K8s finds Secret with this name
+              key: mongo-user # and gets the value for this key
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service # endpoint for accessing service
+spec:
+  selector:
+    app: mongo # should match label of Pods belonging to Service
+  ports:
+    - protocol: TCP
+      port: 27017 # port of Service
+      targetPort: 27017 # port of Pod to forward request to
